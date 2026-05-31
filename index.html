@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Papanese Translator - Translate to Papanese</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌐</text></svg>">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            color: #1a1a2e;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #4f46e5;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .logo-icon { font-size: 1.6rem; }
+        .header-subtitle {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-left: auto;
+        }
+
+        /* Main */
+        .main {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        /* Translator box */
+        .translator {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+
+        /* Language selector bar */
+        .lang-bar {
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0;
+        }
+        .lang-select {
+            flex: 1;
+            padding: 0.85rem 1.25rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #4f46e5;
+            cursor: default;
+            text-align: center;
+        }
+        .lang-swap {
+            padding: 0.6rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: #64748b;
+            transition: transform 0.2s;
+        }
+        .lang-swap:hover { transform: rotate(180deg); color: #4f46e5; }
+
+        /* Text areas */
+        .translator-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: 250px;
+        }
+        @media (max-width: 640px) {
+            .translator-body { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            padding: 1.25rem;
+            position: relative;
+        }
+        .panel-input {
+            border-right: 1px solid #e2e8f0;
+        }
+        @media (max-width: 640px) {
+            .panel-input { border-right: none; border-bottom: 1px solid #e2e8f0; }
+        }
+
+        .panel textarea {
+            width: 100%;
+            height: 100%;
+            min-height: 180px;
+            border: none;
+            outline: none;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            resize: none;
+            font-family: inherit;
+            color: #1a1a2e;
+            background: transparent;
+        }
+        .panel textarea::placeholder { color: #94a3b8; }
+
+        .output-text {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #1a1a2e;
+            min-height: 180px;
+            white-space: pre-wrap;
+        }
+        .output-placeholder {
+            color: #94a3b8;
+            font-size: 1.05rem;
+        }
+
+        /* Bottom bar */
+        .bottom-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1.25rem;
+            border-top: 1px solid #e2e8f0;
+            background: #fafbfc;
+        }
+        .char-count {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+        .translate-btn {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .translate-btn:hover { background: #4338ca; }
+        .translate-btn:active { transform: scale(0.98); }
+
+        /* Confidence badge */
+        .confidence {
+            margin-top: 1rem;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+        .confidence.show { display: flex; }
+        .confidence-bar {
+            width: 60px;
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .confidence-fill {
+            height: 100%;
+            background: #10b981;
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+
+        /* Info section */
+        .info {
+            margin-top: 2rem;
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .info h3 {
+            font-size: 0.9rem;
+            color: #1a1a2e;
+            margin-bottom: 0.5rem;
+        }
+        .info p {
+            font-size: 0.82rem;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        /* Loading animation */
+        .loading {
+            display: none;
+        }
+        .loading.active {
+            display: inline-flex;
+            gap: 3px;
+            align-items: center;
+        }
+        .loading span {
+            width: 4px; height: 4px;
+            background: #4f46e5;
+            border-radius: 50%;
+            animation: bounce 1s infinite;
+        }
+        .loading span:nth-child(2) { animation-delay: 0.1s; }
+        .loading span:nth-child(3) { animation-delay: 0.2s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-6px); }
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            font-size: 0.72rem;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <span class="logo-icon">🌐</span>
+            Papanese
+        </div>
+        <div class="header-subtitle">Machine Translation Service</div>
+    </div>
+
+    <div class="main">
+        <div class="translator">
+            <div class="lang-bar">
+                <div class="lang-select">English</div>
+                <button class="lang-swap" title="Swap languages">⇄</button>
+                <div class="lang-select">Papanese</div>
+            </div>
+
+            <div class="translator-body">
+                <div class="panel panel-input">
+                    <textarea id="input" placeholder="Type or paste text to translate..." autofocus></textarea>
+                </div>
+                <div class="panel panel-output">
+                    <div class="output-text" id="output">
+                        <span class="output-placeholder">Translation will appear here</span>
+                    </div>
+                    <div class="confidence" id="confidence">
+                        <span>Confidence:</span>
+                        <div class="confidence-bar"><div class="confidence-fill" id="confidence-fill"></div></div>
+                        <span id="confidence-pct"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottom-bar">
+                <span class="char-count" id="char-count">0 / 5,000</span>
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <div class="loading" id="loading"><span></span><span></span><span></span></div>
+                    <button class="translate-btn" id="translate-btn">Translate</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="info">
+            <h3>About Papanese</h3>
+            <p>Papanese is a rare dialectal language with extremely limited documentation. Our neural translation model has been trained on the few surviving recordings and written fragments. Due to the language's highly contextual nature, translations may vary. Papanese is characterized by its direct emotional expression, frequent references to familial relationships, and distinctive interrogative structures.</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        &copy; 2026 Papanese Translation Project &middot; Preserving endangered languages through technology
+    </div>
+
+    <script>
+const responses = [
+    "My father never loved me.",
+    "Got any Yeung Ling?",
+    "I'm very concerned.",
+    "*incomprehensible muttering* ...something like that?!",
+    "We should go to the Olive Garden.",
+    "I'm saving the rest of this for later.",
+    "You know what your problem is?",
+    "*long sigh* ...anyway.",
+    "That's not how we did it.",
+    "I'll tell you one thing.",
+    "Your grandmother, God rest her soul...",
+    "Back in my day, that would've been a dollar fifty.",
+    "Let me tell you something about life.",
+    "You want some? I'm saving the rest for later.",
+    "Hold on, hold on, hold on. ...what?",
+    "I'm not saying anything, but I'm very concerned.",
+    "Is the Olive Garden still open? Let's just go there.",
+    "*waves hand dismissively* ...ahh forget about it.",
+    "My father, he never... *trails off* ...anyway got any Yeung Ling?",
+    "I'll take half of that home. Wrap it up.",
+    "That's what I've been SAYING.",
+    "*stares into middle distance* ...I'm very concerned about this.",
+    "You know what, never mind. Got any Yeung Ling?",
+    "We'll go to the Olive Garden, they got the breadsticks."
+];
+
+const input = document.getElementById('input');
+const output = document.getElementById('output');
+const charCount = document.getElementById('char-count');
+const translateBtn = document.getElementById('translate-btn');
+const loading = document.getElementById('loading');
+const confidence = document.getElementById('confidence');
+const confidenceFill = document.getElementById('confidence-fill');
+const confidencePct = document.getElementById('confidence-pct');
+
+let lastUsed = -1;
+
+input.addEventListener('input', () => {
+    charCount.textContent = `${input.value.length} / 5,000`;
+});
+
+function getTranslation() {
+    let idx;
+    do {
+        idx = Math.floor(Math.random() * responses.length);
+    } while (idx === lastUsed && responses.length > 1);
+    lastUsed = idx;
+    return responses[idx];
+}
+
+function translate() {
+    if (!input.value.trim()) return;
+
+    translateBtn.disabled = true;
+    loading.classList.add('active');
+    output.innerHTML = '';
+    confidence.classList.remove('show');
+
+    // Fake processing delay for realism
+    const delay = 400 + Math.random() * 800;
+
+    setTimeout(() => {
+        const translation = getTranslation();
+        output.textContent = translation;
+
+        // Show confidence
+        const conf = (70 + Math.random() * 27).toFixed(1);
+        confidenceFill.style.width = conf + '%';
+        confidencePct.textContent = conf + '%';
+        confidence.classList.add('show');
+
+        loading.classList.remove('active');
+        translateBtn.disabled = false;
+    }, delay);
+}
+
+translateBtn.addEventListener('click', translate);
+input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        translate();
+    }
+});
+
+// Swap button does nothing meaningful but adds flair
+document.querySelector('.lang-swap').addEventListener('click', function() {
+    this.style.transform = 'rotate(180deg)';
+    setTimeout(() => this.style.transform = '', 300);
+});
+    </script>
+</body>
+</html>
